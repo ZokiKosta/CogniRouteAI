@@ -45,7 +45,7 @@ export function demoTrip({ driver, index, startedAt, progress, rand }) {
   }
   const at = () => fixes[5 + Math.floor(rand() * (fixes.length - 10))];
   const mistakes = (1 - progress * 0.8) * (1 - driver.skill);
-  const count = (rate) => Math.floor(rate * mistakes * (1 + rand() * 2));
+  const count = (rate) => Math.floor(rate * 0.4 * mistakes * (0.5 + rand() * 1.5) + rand() * 0.3);
   const add = (type, fields) => {
     const f = at();
     rec.addEvent(makeEvent(type, f.t, { lat: f.lat, lon: f.lon, speedKmh: Math.round(f.speed * 3.6), ...fields }));
@@ -65,9 +65,9 @@ export function demoTrip({ driver, index, startedAt, progress, rand }) {
   for (let i = 0; i < maneuvers; i++) {
     const f = at();
     const type = rand() < 0.55 ? 'lane_change' : rand() < 0.85 ? 'turn' : 'reverse';
-    const blinker = type === 'reverse' ? null : rand() > mistakes * 0.6;
+    const blinker = type === 'reverse' ? null : rand() > mistakes * 0.3;
     const mirrorRoll = rand();
-    const mirrors = mirrorRoll > mistakes * 0.9 ? 'full' : mirrorRoll > mistakes * 0.4 ? 'partial' : 'none';
+    const mirrors = mirrorRoll > mistakes * 0.7 ? 'full' : mirrorRoll > mistakes * 0.2 ? 'partial' : 'none';
     rec.addManeuver({ lat: f.lat, lon: f.lon, type, dir: rand() < 0.5 ? 'left' : 'right', tStart: f.t, tEnd: f.t + 4000, blinker, mirrors, order: blinker && mirrors !== 'none' ? (rand() > mistakes ? 'mirror_first' : 'blinker_first') : undefined, sources: ['imu'] });
     const where = { lat: f.lat, lon: f.lon, source: 'judge' };
     if (type !== 'reverse' && blinker === false) rec.addEvent(makeEvent(type === 'turn' ? 'turn_no_blinker' : 'lane_change_no_blinker', f.t, where));

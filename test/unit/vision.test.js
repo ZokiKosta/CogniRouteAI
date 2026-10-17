@@ -131,3 +131,34 @@ test('rolling through a STOP sign is reported, stopping is not', () => {
     assert.equal(events.filter((e) => e.type === 'stop_sign_violation').length, expected, `min speed ${minSpeed}`);
   }
 });
+
+test('YOLOv8-seg lane masks become straight lane lines', async () => {
+  const { decodeYoloSeg, segmentsToLines } = await import('../../shared/vision/yolo.js');
+  const classes = ['solid_line', 'dashed_line'];
+  const nm = 4;
+  const anchors = 3;
+  const [W, H] = [160, 96]; // model input = frame (no letterbox)
+  const [mw, mh] = [W / 4, H / 4];
+  const out0 = new Float32Array((4 + classes.length + nm) * anchors);
+  const set = (c, i, v) => (out0[c * anchors + i] = v);
+  // anchor 1: a solid line from (40, 95) up to (100, 40), box around it
+  [70, 67, 70, 60].forEach((v, c) => set(c, 1, v));
+  set(4, 1, 0.9);
+  set(4 + classes.length, 1, 1); // mask coefficient for prototype 0
+  const protos = new Float32Array(nm * mh * mw).fill(-10);
+  for (let my = 0; my < mh; my++) {
+    const y = (my + 0.5) * 4;
+    const x = 40 + ((95 - y) / 55) * 60; // the painted line
+    const mx = Math.floor(x / 4);
+    if (y >= 40 && y <= 95 && mx >= 0 && mx < mw) protos[my * mw + mx] = 10;
+  }
+  const lb = { scale: 1, padX: 0, padY: 0, dstW: W, dstH: H, srcW: W, srcH: H };
+  const dets = decodeYoloSeg(out0, [1, 4 + classes.length + nm, anchors], protos, [1, nm, mh, mw], { classes, letterbox: lb });
+  assert.equal(dets.length, 1);
+  assert.ok(dets[0].points.length >= 10, `mask points ${dets[0].points.length}`);
+  const lines = segmentsToLines(dets, W, H, { horizon: 0.4, hood: 1, roiOffset: 0.04 });
+  assert.equal(lines.length, 1);
+  const expectedXb = 40 + ((95 - lines[0].bottom) / 55) * 60;
+  assert.ok(Math.abs(lines[0].xb - expectedXb) < 4, `xb ${lines[0].xb} vs ${expectedXb}`);
+  assert.equal(lines[0].coverage, 0.95, 'solid class maps to a solid line');
+});

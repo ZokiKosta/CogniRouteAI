@@ -106,3 +106,115 @@ export function nms(detections, threshold) {
   }
   return kept;
 }
+
+const sigmoid = (x) => 1 / (1 + Math.exp(-x));
+
+/**
+ * YOLOv8-seg output: out0 [1, 4 + classes + 32, anchors] and prototype masks
+ * protos [1, 32, mh, mw]. Returns detections (frame pixels) with `points`:
+ * centres of the mask pixels of each instance, also in frame pixels.
+ */
+export function decodeYoloSeg(out0, dims0, protos, dimsP, { classes, letterbox: lb, confThreshold = 0.35, iouThreshold = 0.5, maxDetections = 12 }) {
+  const [, channels, anchors] = dims0;
+  const [, nm, mh, mw] = dimsP;
+  const nc = classes.length;
+  if (channels !== 4 + nc + nm) throw new Error(`unexpected seg output shape ${dims0} / ${dimsP}`);
+  const candidates = [];
+  for (let i = 0; i < anchors; i++) {
+    let best = -1;
+    let score = confThreshold;
+    for (let c = 0; c < nc; c++) {
+      const s = out0[(4 + c) * anchors + i];
+      if (s > score) {
+        score = s;
+        best = c;
+      }
+    }
+    if (best < 0) continue;
+    const cx = out0[i];
+    const cy = out0[anchors + i];
+    const w = out0[2 * anchors + i];
+    const h = out0[3 * anchors + i];
+    const inputBox = [cx - w / 2, cy - h / 2, cx + w / 2, cy + h / 2];
+    candidates.push({ cls: classes[best], classIndex: best, score, box: inputBox, anchor: i });
+  }
+  const kept = nms(candidates, iouThreshold).slice(0, maxDetections);
+  const sx = mw / lb.dstW;
+  const sy = mh / lb.dstH;
+  const plane = mh * mw;
+  for (const d of kept) {
+    const coeffs = new Float32Array(nm);
+    for (let k = 0; k < nm; k++) coeffs[k] = out0[(4 + nc + k) * anchors + d.anchor];
+    const [x1, y1, x2, y2] = d.box;
+    const points = [];
+    for (let my = Math.max(0, Math.floor(y1 * sy)); my < Math.min(mh, Math.ceil(y2 * sy)); my++) {
+      for (let mx = Math.max(0, Math.floor(x1 * sx)); mx < Math.min(mw, Math.ceil(x2 * sx)); mx++) {
+        let v = 0;
+        const at = my * mw + mx;
+        for (let k = 0; k < nm; k++) v += coeffs[k] * protos[k * plane + at];
+        if (sigmoid(v) > 0.5) points.push(unletterboxPoint((mx + 0.5) / sx, (my + 0.5) / sy, lb));
+      }
+    }
+    d.points = points;
+    d.box = unletterbox(d.box, lb);
+  }
+  return kept;
+}
+
+function unletterboxPoint(x, y, lb) {
+  return [(x - lb.padX) / lb.scale, (y - lb.padY) / lb.scale];
+}
+
+const LINE_COVERAGE = { solid_line: 0.95, double_solid: 0.95, dashed_line: 0.35 };
+
+/**
+ * Lane-line instances from a YOLOv8-seg model -> straight lines in the same
+ * form the LaneDetector produces, so the LaneTracker can use either source.
+ */
+export function segmentsToLines(dets, width, height, { horizon = 0.5, hood = 0.94, roiOffset = 0.06 } = {}) {
+  const top = Math.round(height * Math.min(0.9, horizon + roiOffset));
+  const bottom = Math.round(height * hood) - 1;
+  const lines = [];
+  for (const d of dets) {
+    if (!(d.cls in LINE_COVERAGE)) continue;
+    const pts = d.points.filter(([, y]) => y >= top && y <= bottom);
+    if (pts.length < 6) continue;
+    let ss = 0;
+    let sx = 0;
+    let sss = 0;
+    let ssx = 0;
+    let minS = 1;
+    let maxS = 0;
+    for (const [x, y] of pts) {
+      const s = (y - top) / (bottom - top);
+      ss += s;
+      sx += x;
+      sss += s * s;
+      ssx += s * x;
+      minS = Math.min(minS, s);
+      maxS = Math.max(maxS, s);
+    }
+    const n = pts.length;
+    const den = n * sss - ss * ss;
+    if (Math.abs(den) < 1e-9 || maxS - minS < 0.2) continue;
+    const b = (n * ssx - ss * sx) / den;
+    const a = (sx - b * ss) / n;
+    lines.push({
+      xt: Math.round(a * 10) / 10,
+      xb: Math.round((a + b) * 10) / 10,
+      top,
+      bottom,
+      coverage: LINE_COVERAGE[d.cls],
+      extent: Math.round((maxS - minS) * 100) / 100,
+      inliers: n,
+      cls: d.cls,
+      score: d.score,
+    });
+  }
+  // One line per marking: overlapping instances (e.g. two classes on the same paint) collapse to the best.
+  const kept = [];
+  for (const line of lines.sort((p, q) => q.score - p.score)) {
+    if (!kept.some((k) => Math.abs(k.xb - line.xb) < width * 0.04 && Math.abs(k.xt - line.xt) < width * 0.03)) kept.push(line);
+  }
+  return kept.sort((p, q) => p.xb - q.xb);
+}

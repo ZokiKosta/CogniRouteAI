@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="mk">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link rel="icon" href="/icons/icon.svg" type="image/svg+xml" />
+    <link rel="stylesheet" href="/web/src/site.css" />
+    <title>Контролна табла – CogniRouteAI</title>
+  </head>
+  <body class="dash">
+    <header class="dash-head">
+      <nav class="site-nav wrap">
+        <a class="brand" href="/"><img src="/icons/icon.svg" alt="" />CogniRouteAI</a>
+        <a class="link" href="/">Почетна</a>
+        <a class="link" href="/app/">Апликација</a>
+      </nav>
+    </header>
+    <main class="wrap" id="dashboard">
+      <h1>Контролна табла</h1>
+
+      <div class="filters" role="group" aria-label="Филтри">
+        <label>Возач <select id="driver"></select></label>
+        <label
+          >Период
+          <select id="period">
+            <option value="7">Последни 7 дена</option>
+            <option value="30" selected>Последни 30 дена</option>
+            <option value="90">Последни 90 дена</option>
+            <option value="0">Сите возења</option>
+          </select>
+        </label>
+        <span class="spacer"></span>
+        <span class="hint" id="ai-status"></span>
+      </div>
+
+      <div id="content">
+        <section class="kpis" id="kpis" aria-label="Клучни бројки"></section>
+
+        <div class="grid-2" style="margin-top: 20px">
+          <section class="card">
+            <div class="card-head">
+              <h2>Оценка по возење</h2>
+              <button class="toggle-table" id="trend-toggle" aria-pressed="false">Табела</button>
+            </div>
+            <div id="trend"></div>
+          </section>
+          <section class="card">
+            <div class="card-head">
+              <h2>Најчести грешки</h2>
+              <button class="toggle-table" id="events-toggle" aria-pressed="false">Табела</button>
+            </div>
+            <div id="events"></div>
+          </section>
+        </div>
+
+        <section class="card" style="margin-top: 16px">
+          <div class="card-head"><h2>Просек по категории</h2><span class="hint">0–100, повеќе е подобро</span></div>
+          <div class="meters" id="categories"></div>
+        </section>
+
+        <section class="card" style="margin-top: 16px">
+          <div class="card-head"><h2>Возења</h2><span class="hint">Кликни на возење за детали</span></div>
+          <div id="trips" style="overflow-x: auto"></div>
+        </section>
+
+        <section id="detail" hidden style="margin-top: 16px"></section>
+      </div>
+    </main>
+    <script type="module" src="/web/src/dashboard.js"></script>
+  </body>
+</html>

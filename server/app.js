@@ -24,12 +24,16 @@ export function validateTrip(t) {
   return null;
 }
 
-export function lanUrls(port, protocol = 'http') {
-  const urls = [];
+export function lanAddresses() {
+  const out = [];
   for (const list of Object.values(networkInterfaces())) {
-    for (const a of list ?? []) if (a.family === 'IPv4' && !a.internal) urls.push(`${protocol}://${a.address}:${port}`);
+    for (const a of list ?? []) if (a.family === 'IPv4' && !a.internal) out.push(a.address);
   }
-  return urls;
+  return out;
+}
+
+export function lanUrls(port, protocol = 'http') {
+  return lanAddresses().map((ip) => `${protocol}://${ip}:${port}`);
 }
 
 /** Simple per-IP limiter so a public deployment cannot burn through the API key. */
@@ -68,7 +72,8 @@ export function createApp({ db, coach, aiEnabled = false, model = null, distDir 
   app.use('/api', express.json({ limit: '8mb' }));
 
   app.get('/api/health', (req, res) => res.json({ ok: true, ai: aiEnabled, model: aiEnabled ? model : null }));
-  app.get('/api/info', (req, res) => res.json({ lanUrls: lanUrls(port), ai: aiEnabled }));
+  // The landing page builds a QR code for phones on the same Wi-Fi from these.
+  app.get('/api/info', (req, res) => res.json({ addresses: lanAddresses(), ai: aiEnabled }));
 
   app.get('/api/drivers', (req, res) => res.json(db.drivers()));
 

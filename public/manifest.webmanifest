@@ -1,0 +1,17 @@
+{
+  "name": "CogniRouteAI – AI инструктор за возење",
+  "short_name": "CogniRoute",
+  "description": "Те следи додека возиш со сензорите, камерите и микрофонот на телефонот и ти дава совети за побезбедно возење.",
+  "lang": "mk",
+  "start_url": "/app/",
+  "scope": "/app/",
+  "display": "fullscreen",
+  "orientation": "any",
+  "background_color": "#0b1726",
+  "theme_color": "#0b1726",
+  "icons": [
+    { "src": "/icons/icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "/icons/icon-512.png", "sizes": "512x512", "type": "image/png" },
+    { "src": "/icons/icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}

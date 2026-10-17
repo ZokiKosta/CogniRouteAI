@@ -57,23 +57,16 @@ def verify(onnx_path, names, image_path):
         print(f"  {width}x{height}: output {tuple(outputs[0].shape)}, {elapsed:.0f} ms, found: {found}")
 
 
-def main():
-    parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    parser.add_argument("--weights", default="yolov8n.pt", help="YOLOv8 .pt weights (downloaded automatically if missing)")
-    parser.add_argument("--name", default=None, help="output file name without extension (default: weights stem)")
-    parser.add_argument("--out", default="public/models", help="output directory")
-    parser.add_argument("--opset", type=int, default=17)
-    parser.add_argument("--verify", default=None, help="optional image to run a quick sanity check on")
-    args = parser.parse_args()
-
+def export(weights, name=None, out="public/models", opset=17, verify_image=None):
+    """Exports `weights` to <out>/<name>.onnx + <name>.json; returns the ONNX path."""
     from ultralytics import YOLO
 
-    model = YOLO(args.weights)
-    exported = Path(model.export(format="onnx", dynamic=True, simplify=True, opset=args.opset, imgsz=640))
+    model = YOLO(weights)
+    exported = Path(model.export(format="onnx", dynamic=True, simplify=True, opset=opset, imgsz=640))
 
-    out_dir = Path(args.out)
+    out_dir = Path(out)
     out_dir.mkdir(parents=True, exist_ok=True)
-    name = args.name or Path(args.weights).stem
+    name = name or Path(weights).stem
     onnx_path = out_dir / f"{name}.onnx"
     shutil.move(str(exported), onnx_path)
 
@@ -83,14 +76,26 @@ def main():
         "task": model.task,  # "detect" or "segment"
         "classes": names,
         "inputSizes": {"fast": [320, 192], "quality": [640, 384]},
-        "source": str(args.weights),
+        "source": str(weights),
         "license": "AGPL-3.0 (Ultralytics YOLOv8)",
     }
     (out_dir / f"{name}.json").write_text(json.dumps(meta, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
     print(f"Saved {onnx_path} ({onnx_path.stat().st_size / 1e6:.1f} MB) and {name}.json, {len(names)} classes")
 
-    if args.verify:
-        verify(onnx_path, names, args.verify)
+    if verify_image:
+        verify(onnx_path, names, verify_image)
+    return onnx_path
+
+
+def main():
+    parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
+    parser.add_argument("--weights", default="yolov8n.pt", help="YOLOv8 .pt weights (downloaded automatically if missing)")
+    parser.add_argument("--name", default=None, help="output file name without extension (default: weights stem)")
+    parser.add_argument("--out", default="public/models", help="output directory")
+    parser.add_argument("--opset", type=int, default=17)
+    parser.add_argument("--verify", default=None, help="optional image to run a quick sanity check on")
+    args = parser.parse_args()
+    export(args.weights, args.name, args.out, args.opset, args.verify)
 
 
 if __name__ == "__main__":

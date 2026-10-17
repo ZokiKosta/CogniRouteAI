@@ -122,6 +122,20 @@ export const MANEUVER_TYPES = {
 
 export const DIRECTION_LABELS = { left: 'лево', right: 'десно' };
 
+const MONTHS = ['јан', 'фев', 'мар', 'апр', 'мај', 'јун', 'јул', 'авг', 'сеп', 'окт', 'ное', 'дек'];
+const pad = (n) => String(n).padStart(2, '0');
+
+/** "17 окт" / "17 окт 11:12" – browsers differ in Macedonian locale data, so format by hand. */
+export function formatDayMonth(t) {
+  const d = new Date(t);
+  return `${d.getDate()} ${MONTHS[d.getMonth()]}`;
+}
+
+export function formatDateTime(t) {
+  const d = new Date(t);
+  return `${formatDayMonth(t)} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+
 export function eventLabel(type) {
   return EVENT_TYPES[type]?.label ?? type;
 }

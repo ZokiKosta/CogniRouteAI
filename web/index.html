@@ -1,0 +1,175 @@
+<!doctype html>
+<html lang="mk">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="description" content="CogniRouteAI – AI инструктор за возење. Телефонот со своите сензори, камери и микрофон те следи додека возиш и ти дава совети." />
+    <link rel="icon" href="/icons/icon.svg" type="image/svg+xml" />
+    <link rel="stylesheet" href="/web/src/site.css" />
+    <title>CogniRouteAI – AI инструктор за возење</title>
+  </head>
+  <body>
+    <header class="hero">
+      <div class="wrap">
+        <nav class="site-nav">
+          <a class="brand" href="/"><img src="/icons/icon.svg" alt="" />CogniRouteAI</a>
+          <a class="link" href="#kako">Како работи</a>
+          <a class="link" href="#drzac">Држач</a>
+          <a class="link" href="/dashboard">Контролна табла</a>
+        </nav>
+        <div class="hero-grid">
+          <div>
+            <h1>AI инструктор за возење – во твојот телефон</h1>
+            <p class="tagline">
+              Стави го телефонот на шофершајбната. Додека возиш, CogniRouteAI гледа на патот и на тебе, слуша мигавец и сирени, ги мери кочењето и
+              свртувањата – и со глас ти кажува што да подобриш.
+            </p>
+            <div class="cta">
+              <a class="btn primary" href="/app/">▶ Отвори ја апликацијата</a>
+              <a class="btn" href="/dashboard">📊 Контролна табла</a>
+            </div>
+          </div>
+          <aside class="phone-card" aria-label="Отвори на телефон">
+            <div class="qr" id="qr" role="img" aria-label="QR код до апликацијата"></div>
+            <strong>Скенирај со телефонот</strong>
+            <small id="qr-url">…</small>
+            <p class="status-line" id="server-status"></p>
+          </aside>
+        </div>
+      </div>
+    </header>
+
+    <main>
+      <section class="block wrap" id="kako">
+        <h2>Како работи</h2>
+        <p class="sub">Три чекори. Сликата и звукот се обработуваат на самиот телефон; на серверот оди само резимето на возењето.</p>
+        <div class="steps3">
+          <article>
+            <h3>Постави го телефонот</h3>
+            <p>Држач на шофершајбната, хоризонтално, задната камера кон патот. Апликацијата ти помага да ги порамниш хоризонтот и хаубата и да ги калибрираш ретровизорите и мигавецот.</p>
+          </article>
+          <article>
+            <h3>Вози</h3>
+            <p>Не допирај ништо. Слушаш кратки гласовни предупредувања: растојание, пешаци, брзина, полна линија, ретровизор пред маневар, сирена на брза помош.</p>
+          </article>
+          <article>
+            <h3>Подобри се</h3>
+            <p>По возењето добиваш оценка по категории, листа на маневри и персонални совети од AI инструкторот. На контролната табла го следиш напредокот.</p>
+          </article>
+        </div>
+      </section>
+
+      <section class="block wrap">
+        <h2>Што препознава</h2>
+        <p class="sub">Секој сензор на телефонот има своја задача.</p>
+        <div class="features">
+          <article>
+            <div class="icon">🚗</div>
+            <h3>Камера кон патот</h3>
+            <p>YOLOv8 ги препознава возилата, пешаците, велосипедистите, животните и знакот STOP. Мери растојание до возилото напред (правило на 2 секунди) и време до судир.</p>
+          </article>
+          <article>
+            <div class="icon">🛣️</div>
+            <h3>Полни и испрекинати линии</h3>
+            <p>Ги следи линиите на лентата и знае кога ја менуваш – и дали си преминал преку полна линија.</p>
+          </article>
+          <article>
+            <div class="icon">👀</div>
+            <h3>Камера кон возачот</h3>
+            <p>Дали погледна во ретровизор пред менување лента, свртување или рикверц, дали гледаш надолу во телефонот, знаци на поспаност.</p>
+          </article>
+          <article>
+            <div class="icon">🎧</div>
+            <h3>Микрофон</h3>
+            <p>Го слуша кликањето на мигавецот (дали го вклучи навреме) и сирените на брза помош, полиција и пожарна – и те предупредува да направиш простор.</p>
+          </article>
+          <article>
+            <div class="icon">📈</div>
+            <h3>Сензори за движење и GPS</h3>
+            <p>Нагло кочење и забрзување, остри кривини, свртувања, рикверц, брзина и ограничувања од OpenStreetMap.</p>
+          </article>
+          <article>
+            <div class="icon">🤖</div>
+            <h3>AI инструктор</h3>
+            <p>Claude го анализира возењето и ти дава конкретни совети на македонски: што беше добро, што да подобриш и цел за следното возење.</p>
+          </article>
+        </div>
+      </section>
+
+      <section class="block wrap" id="drzac">
+        <div class="mount">
+          <figure>
+            <svg viewBox="0 0 640 380" role="img" aria-labelledby="mount-title">
+              <title id="mount-title">Положба на телефонот на шофершајбната</title>
+              <defs>
+                <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0" stop-color="#9cc7ef" />
+                  <stop offset="1" stop-color="#d9ecfb" />
+                </linearGradient>
+              </defs>
+              <rect width="640" height="380" fill="#1c2733" rx="12" />
+              <path d="M70 40 H570 L610 260 H30 Z" fill="url(#sky)" />
+              <path d="M30 260 L610 260 L610 262 L30 262 Z" fill="#6b7d8c" />
+              <path d="M230 170 L410 170 L560 260 L80 260 Z" fill="#5b6570" />
+              <path d="M316 172 L300 260" stroke="#ffffff" stroke-width="5" stroke-dasharray="14 12" />
+              <path d="M238 172 L120 260" stroke="#ffffff" stroke-width="4" />
+              <path d="M402 172 L520 260" stroke="#ffffff" stroke-width="4" />
+              <path d="M230 170 L410 170" stroke="#8a9aa8" stroke-width="2" />
+              <rect x="272" y="44" width="96" height="30" rx="10" fill="#2b3946" />
+              <rect x="278" y="49" width="84" height="20" rx="7" fill="#7f97ab" />
+              <text x="320" y="30" fill="#e5edf4" font-size="14" text-anchor="middle">ретровизор</text>
+              <path d="M330 140 L250 245 L420 245 Z" fill="#3ddc97" opacity="0.22" />
+              <rect x="300" y="96" width="70" height="40" rx="6" fill="#0b1726" stroke="#3ddc97" stroke-width="3" />
+              <circle cx="360" cy="106" r="4" fill="#3ddc97" />
+              <path d="M335 136 L335 150" stroke="#9aa9b6" stroke-width="5" />
+              <path d="M70 40 H570 L610 260 H30 Z" fill="none" stroke="#0d141b" stroke-width="18" />
+              <path d="M0 300 C160 270 480 270 640 300 V380 H0 Z" fill="#11181f" />
+              <circle cx="190" cy="340" r="58" fill="none" stroke="#2f3d4a" stroke-width="14" />
+              <text x="455" y="110" fill="#e5edf4" font-size="14">телефон во држач,</text>
+              <text x="455" y="128" fill="#e5edf4" font-size="14">хоризонтално</text>
+              <path d="M450 116 L376 116" stroke="#e5edf4" stroke-width="1.5" />
+              <text x="440" y="205" fill="#0b1726" font-size="13" font-weight="700">задна камера → пат</text>
+              <text x="40" y="320" fill="#c9d6e3" font-size="13">предна камера → возач (ретровизори, внимание)</text>
+            </svg>
+            <figcaption>Горе на средина, до или под ретровизорот: телефонот гледа низ шофершајбната, а не ти го попречува видот.</figcaption>
+          </figure>
+          <div>
+            <h2>Каде да го ставиш телефонот</h2>
+            <ul>
+              <li>Држач со вендуза на шофершајбната – не на вентилацијата, бидејќи вибрира и ги расипува мерењата.</li>
+              <li>Хоризонтално (landscape), задната камера право кон патот, екранот и предната камера кон тебе.</li>
+              <li>Хоризонтот приближно на средина на сликата, а хаубата најмногу на долните 10–15%.</li>
+              <li>Цврсто – ако телефонот се помести, апликацијата повторно се калибрира.</li>
+              <li>Вклучи полнач: камерите и AI се трошат батерија; на сонце внимавај на прегревање.</li>
+              <li>Провери ги правилата за држачи во Законот за безбедност на сообраќајот на патиштата – држачот не смее да го попречува видот.</li>
+            </ul>
+          </div>
+        </div>
+      </section>
+
+      <section class="block privacy">
+        <div class="wrap">
+          <h2>Приватност и безбедност</h2>
+          <p class="sub">Направено за возачи, ученици и инструктори.</p>
+          <div class="privacy-grid">
+            <article>
+              <h3>Сè на телефонот</h3>
+              <p>Видеото и звукот се анализираат во реално време и не се снимаат. Ниту лица ниту регистарски таблички не заминуваат од телефонот.</p>
+            </article>
+            <article>
+              <h3>Само резиме на серверот</h3>
+              <p>Се праќаат настани, маневри, рута и оценка – за историјата и за AI советите. Возењата може да ги избришеш.</p>
+            </article>
+            <article>
+              <h3>Без допирање</h3>
+              <p>Апликацијата зборува; допир на екранот додека возиш се брои како користење телефон. Подеси сè пред да тргнеш.</p>
+            </article>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <footer class="site wrap">CogniRouteAI · прототип · YOLOv8 (Ultralytics, AGPL-3.0) · MediaPipe · OpenStreetMap · Claude</footer>
+    <script type="module" src="/web/src/landing.js"></script>
+  </body>
+</html>
