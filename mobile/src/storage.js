@@ -26,8 +26,9 @@ async function tx(mode, fn) {
   if (!db) return fn(null);
   return new Promise((resolve, reject) => {
     const t = db.transaction(STORE, mode);
-    const result = fn(t.objectStore(STORE));
-    t.oncomplete = () => resolve(result?.result ?? result);
+    const request = fn(t.objectStore(STORE));
+    // A missing key resolves to undefined (not to the request object).
+    t.oncomplete = () => resolve(request instanceof IDBRequest ? request.result : request);
     t.onerror = () => reject(t.error);
   });
 }
