@@ -23,6 +23,15 @@ const ALERT_TEXT = {
   break: () => '☕ Време е за кратка пауза',
 };
 
+/** Optional browser APIs (fullscreen, orientation lock, wake lock) are missing on some phones, e.g. iPhone Safari. */
+async function attempt(fn) {
+  try {
+    return (await fn()) ?? null;
+  } catch {
+    return null;
+  }
+}
+
 export async function renderDrive(root, { go, demo }) {
   const settings = loadSettings();
   const voice = new Voice({ enabled: settings.voice });
@@ -149,8 +158,8 @@ export async function renderDrive(root, { go, demo }) {
     if (demo && !demoFile) throw new Error('Прво избери видео.');
     voice.unlock();
     if (!demo) await requestMotionPermission();
-    document.documentElement.requestFullscreen?.().catch(() => {});
-    screen.orientation?.lock?.('landscape').catch(() => {});
+    attempt(() => document.documentElement.requestFullscreen?.());
+    attempt(() => screen.orientation?.lock?.('landscape'));
 
     let note = null;
     if (demo) {
@@ -216,11 +225,7 @@ export async function renderDrive(root, { go, demo }) {
     });
     voice.say(demo ? 'Демото започна.' : 'Среќен пат. Возиме заедно.', { key: 'start', cooldownMs: 0 });
 
-    try {
-      wakeLock = await navigator.wakeLock?.request('screen');
-    } catch {
-      wakeLock = null;
-    }
+    wakeLock = await attempt(() => navigator.wakeLock?.request('screen'));
     liveTimer = setInterval(updateHud, 250);
   }
 
@@ -272,7 +277,7 @@ export async function renderDrive(root, { go, demo }) {
       const v = session.speed;
       if (v != null && v > 3) session.event(makeEvent('phone_use', Date.now(), { speedKmh: Math.round(v * 3.6), detail: 'app_hidden', source: 'app' }), { cooldownMs: 60000 });
     } else if (wakeLock?.released !== false) {
-      wakeLock = await navigator.wakeLock?.request('screen').catch(() => null);
+      wakeLock = await attempt(() => navigator.wakeLock?.request('screen'));
     }
   };
   document.addEventListener('visibilitychange', onVisibility);
@@ -310,8 +315,8 @@ export async function renderDrive(root, { go, demo }) {
     stopStream(streams.mic);
     if (typeof streams.road === 'string') URL.revokeObjectURL(streams.road);
     else stopStream(streams.road);
-    wakeLock?.release?.().catch(() => {});
-    if (document.fullscreenElement) document.exitFullscreen?.().catch(() => {});
+    attempt(() => wakeLock?.release?.());
+    if (document.fullscreenElement) attempt(() => document.exitFullscreen?.());
     return trip;
   }
 

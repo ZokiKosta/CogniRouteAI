@@ -56,7 +56,8 @@ export class RoadVision {
         metaUrl: '/models/yolov8n.json',
         laneModelUrl: '/models/lanes.onnx',
         laneMetaUrl: '/models/lanes.json',
-        wasmPath: '/vendor/ort/',
+        // In dev Vite serves the runtime from node_modules (it rewrites dynamic imports of /public files).
+        wasmPath: import.meta.env.DEV ? '/node_modules/onnxruntime-web/dist/' : '/vendor/ort/',
         webgpu: true, // falls back to WebAssembly when the phone has no WebGPU
         lanes: { horizon: this.settings.horizon, hood: this.settings.hood },
       });

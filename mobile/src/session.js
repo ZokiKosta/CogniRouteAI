@@ -131,46 +131,9 @@ export class DriveSession {
       this.stops.push(() => audio.stop());
     }
 
-    if (caps.roadCam) {
-      this.road = new RoadVision({
-        settings: s,
-        onLaneChange: toJudge,
-        onEvent: (e) => this.event(e),
-        onAlert: (a) => this.alert(a.kind === 'pedestrian' && a.cls !== 'person' && a.cls !== 'bicycle' ? { ...a, kind: 'animal' } : a),
-        getSpeed: () => this.speed,
-        getWhere: () => this.where,
-      });
-      try {
-        const info = await this.road.init();
-        this.hud.onStatus?.({ type: 'road_ready', ...info });
-        this.road.start(sources.roadVideo, sources.roadCanvas);
-        this.stops.push(() => this.road.stop());
-      } catch (err) {
-        this.road = null;
-        caps.roadCam = false;
-        this.hud.onStatus?.({ type: 'road_error', message: err.message });
-      }
-    }
-
-    if (caps.driverCam) {
-      this.driverMonitor = new DriverMonitor({
-        calibration: s.gazeCalibration,
-        onEvent: (e) => this.event(e),
-        onAlert: (a) => this.alert(a),
-        onGaze: (t, zone) => this.judge.gaze(t, zone),
-      });
-      this.driver = new DriverVision();
-      try {
-        await this.driver.init();
-        this.driver.start(sources.driverVideo, (features) => this.driverMonitor.update(Date.now(), features, this.speed, this.where));
-        this.stops.push(() => this.driver.close());
-        this.hud.onStatus?.({ type: 'driver_ready' });
-      } catch (err) {
-        caps.driverCam = false;
-        this.judge.setCapabilities({ driverCam: false });
-        this.hud.onStatus?.({ type: 'driver_error', message: err.message });
-      }
-    }
+    // The camera models take a while to load the first time (tens of MB);
+    // sensors, GPS and the microphone already work in the meantime.
+    this.ready = Promise.allSettled([caps.roadCam && this.startRoad(sources), caps.driverCam && this.startDriver(sources)]);
 
     this.ticker = setInterval(() => {
       const now = Date.now();
@@ -180,6 +143,53 @@ export class DriveSession {
     this.stops.push(() => clearInterval(this.ticker));
     this.startedAt = Date.now();
     return caps;
+  }
+
+  async startRoad(sources) {
+    const caps = this.caps;
+    this.road = new RoadVision({
+      settings: this.settings,
+      onLaneChange: (m) => this.judge.addManeuver({ ...this.where, ...m }),
+      onEvent: (e) => this.event(e),
+      onAlert: (a) => this.alert(a.kind === 'pedestrian' && a.cls !== 'person' && a.cls !== 'bicycle' ? { ...a, kind: 'animal' } : a),
+      getSpeed: () => this.speed,
+      getWhere: () => this.where,
+    });
+    try {
+      const info = await this.road.init();
+      if (this.stopped) return this.road.stop();
+      this.road.start(sources.roadVideo, sources.roadCanvas);
+      this.stops.push(() => this.road.stop());
+      this.hud.onStatus?.({ type: 'road_ready', ...info });
+    } catch (err) {
+      this.road?.stop();
+      this.road = null;
+      caps.roadCam = false;
+      this.hud.onStatus?.({ type: 'road_error', message: err.message });
+    }
+  }
+
+  async startDriver(sources) {
+    const caps = this.caps;
+    this.driverMonitor = new DriverMonitor({
+      calibration: this.settings.gazeCalibration,
+      onEvent: (e) => this.event(e),
+      onAlert: (a) => this.alert(a),
+      onGaze: (t, zone) => this.judge.gaze(t, zone),
+    });
+    this.driver = new DriverVision();
+    try {
+      await this.driver.init();
+      if (this.stopped) return this.driver.close();
+      this.driver.start(sources.driverVideo, (features) => this.driverMonitor.update(Date.now(), features, this.speed, this.where));
+      this.stops.push(() => this.driver.close());
+      this.hud.onStatus?.({ type: 'driver_ready' });
+    } catch (err) {
+      this.driver.close();
+      caps.driverCam = false;
+      this.judge.setCapabilities({ driverCam: false });
+      this.hud.onStatus?.({ type: 'driver_error', message: err.message });
+    }
   }
 
   /** Taps on the screen while moving count as using the phone. */
@@ -224,6 +234,7 @@ export class DriveSession {
   }
 
   stop() {
+    this.stopped = true;
     this.judge?.flush();
     this.speedMonitor?.flush();
     for (const stop of this.stops.splice(0)) {
