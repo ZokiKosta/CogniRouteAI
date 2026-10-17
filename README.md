@@ -30,6 +30,15 @@ npm run seed     # (по избор) демо возења за контролн
 npm run dev      # API на :3000 + Vite на :5173
 ```
 
+Наједноставно (со Python, без да памтиш npm команди) – сам инсталира зависности и стартува:
+
+```bash
+python3 start.py            # дев режим (веб + апликација на :5173)
+python3 start.py --phone    # преку HTTPS за тестирање на телефон
+python3 start.py --prod     # build + продукциски сервер на :3000
+python3 start.py --seed     # прво внеси демо возења
+```
+
 - Веб-страна: <http://localhost:5173/>
 - Контролна табла: <http://localhost:5173/dashboard>
 - Мобилна апликација: <http://localhost:5173/app/>
