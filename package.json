@@ -15,7 +15,8 @@
     "start": "node --disable-warning=ExperimentalWarning server/index.js",
     "seed": "node --disable-warning=ExperimentalWarning server/seed.js",
     "test": "node --disable-warning=ExperimentalWarning --test --test-reporter=spec \"test/unit/**/*.test.js\"",
-    "test:e2e": "node test/e2e/run.js"
+    "test:e2e": "node test/e2e/run.js",
+    "voice": "node --disable-warning=ExperimentalWarning scripts/generate-voice.js"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.135.0",

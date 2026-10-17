@@ -8,35 +8,37 @@ import { SpeedLimitService } from '../../shared/speed-limits.js';
 import { DriverMonitor } from '../../shared/gaze.js';
 import { TripRecorder } from '../../shared/trip.js';
 import { makeEvent } from '../../shared/events.js';
+import { GreenWave } from '../../shared/signals.js';
+import { PHRASES, speedingPhrase } from '../../shared/voice-phrases.js';
 import { watchMotion } from './sensors/motion.js';
 import { simulateGps, watchGps } from './sensors/gps.js';
 import { startAudioAnalysis } from './sensors/audio.js';
 import { RoadVision } from './vision/road.js';
 import { DriverVision } from './vision/driver.js';
 
-// What the coach says out loud. {limit} is filled in for speeding.
-const SAY = {
-  harsh_brake: 'Нагло кочење. Гледај подалеку напред.',
-  harsh_accel: 'Нежно со гасот.',
-  harsh_corner: 'Намали брзина пред кривина.',
-  solid_line_crossing: 'Полна линија! Не смее да се преминува.',
-  lane_change_no_blinker: 'Мигавец пред менување лента.',
-  turn_no_blinker: 'Мигавец пред свртување.',
-  no_mirror_check: 'Погледни во ретровизор пред маневар.',
-  reverse_no_check: 'При рикверц гледај назад.',
-  stop_sign_violation: 'Кај знак стоп мора целосно да застанеш.',
-  phone_use: 'Не користи телефон додека возиш.',
-};
+// Which events are spoken, and how often live warnings may repeat (texts in shared/voice-phrases.js).
+const SPOKEN_EVENTS = new Set([
+  'harsh_brake',
+  'harsh_accel',
+  'harsh_corner',
+  'solid_line_crossing',
+  'lane_change_no_blinker',
+  'turn_no_blinker',
+  'no_mirror_check',
+  'reverse_no_check',
+  'stop_sign_violation',
+  'phone_use',
+]);
 const ALERTS = {
-  speeding: { text: 'Намали брзина. Ограничување {limit}.', cooldownMs: 45000 },
-  tailgating: { text: 'Држи растојание, најмалку две секунди.', cooldownMs: 30000 },
-  collision: { text: 'Внимание! Возило напред!', urgent: true, cooldownMs: 6000 },
-  pedestrian: { text: 'Внимание, пешак!', urgent: true, cooldownMs: 8000 },
-  animal: { text: 'Внимание, животно на патот!', urgent: true, cooldownMs: 8000 },
-  siren: { text: 'Возило за итна помош! Тргни десно и направи простор.', urgent: true, cooldownMs: 20000 },
-  distraction: { text: 'Гледај на патот!', urgent: true, cooldownMs: 10000 },
-  drowsy: { text: 'Изгледаш поспано. Направи пауза.', urgent: true, cooldownMs: 30000 },
-  break: { text: 'Време е за кратка пауза.', cooldownMs: 600000 },
+  speeding: { cooldownMs: 45000 },
+  tailgating: { cooldownMs: 30000 },
+  collision: { urgent: true, cooldownMs: 6000 },
+  pedestrian: { urgent: true, cooldownMs: 8000 },
+  animal: { urgent: true, cooldownMs: 8000 },
+  siren: { urgent: true, cooldownMs: 20000 },
+  distraction: { urgent: true, cooldownMs: 10000 },
+  drowsy: { urgent: true, cooldownMs: 30000 },
+  break: { cooldownMs: 600000 },
 };
 
 export class DriveSession {
@@ -98,6 +100,13 @@ export class DriveSession {
     });
     this.limits = s.osmLimits && !sources.demo ? new SpeedLimitService() : null;
 
+    // Green wave (GLOSA): advises a steady speed to reach the next light on
+    // green. It only reads the signals' timing; it never controls them.
+    this.greenWave = sources.signals?.length
+      ? new GreenWave({ signals: sources.signals, onAdvice: (a) => this.greenAdvice(a) })
+      : null;
+    caps.greenWave = !!this.greenWave;
+
     if (caps.motion) this.stops.push(watchMotion((m) => this.motion.addMotion(m)));
     const onFix = (raw) => {
       this.motion.addGps(raw);
@@ -106,6 +115,7 @@ export class DriveSession {
       this.fix = fix;
       this.recorder.addFix(fix);
       if (this.limits) this.limits.update(fix).then((l) => l && (this.limit = l));
+      this.greenWave?.update(fix, fix.speed != null ? fix.speed * 3.6 : null, this.limit?.limit);
     };
     this.stops.push(sources.demo ? simulateGps(onFix, sources.demo.speedKmh) : watchGps(onFix, (err) => this.hud.onStatus?.({ type: 'gps_error', message: err.message })));
 
@@ -206,15 +216,31 @@ export class DriveSession {
     }
     this.recorder.addEvent(e);
     this.hud.onEvent?.(e);
-    const text = SAY[e.type];
-    if (text) this.voice?.say(text, { key: e.type, cooldownMs: 20000 });
+    if (SPOKEN_EVENTS.has(e.type)) this.voice?.say(PHRASES[e.type], { key: e.type, cooldownMs: 20000 });
   }
 
   alert(a) {
     this.hud.onAlert?.(a);
     const spec = ALERTS[a.kind];
     if (!spec) return;
-    this.voice?.say(spec.text.replace('{limit}', a.limit ?? this.limit?.limit ?? ''), { key: a.kind, cooldownMs: spec.cooldownMs, urgent: spec.urgent });
+    const phrase = a.kind === 'speeding' ? speedingPhrase(a.limit ?? this.limit?.limit) : { key: a.kind, text: PHRASES[a.kind] };
+    this.voice?.say(phrase.text, { key: phrase.key, cooldownMs: spec.cooldownMs, urgent: spec.urgent, group: a.kind });
+  }
+
+  /** Spoken green-wave advice; the HUD shows it visually from live().greenWave. */
+  greenAdvice(a) {
+    this.hud.onGreenWave?.(a);
+    const phrase =
+      a.action === 'slow'
+        ? { key: `green_slow_${Math.round(a.targetKmh / 5) * 5}`, text: PHRASES[`green_slow_${Math.round(a.targetKmh / 5) * 5}`] ?? `Намали на ${a.targetKmh} за зелен бран.` }
+        : a.action === 'speed'
+          ? { key: `green_speed_${Math.round(a.targetKmh / 5) * 5}`, text: PHRASES[`green_speed_${Math.round(a.targetKmh / 5) * 5}`] ?? `Забрзај до ${a.targetKmh} за да фатиш зелено.` }
+          : a.action === 'ease'
+            ? { key: 'green_ease', text: PHRASES.green_ease }
+            : a.action === 'go'
+              ? { key: 'green_go', text: PHRASES.green_go }
+              : { key: 'green_keep', text: PHRASES.green_keep };
+    this.voice?.say(phrase.text, { key: phrase.key, cooldownMs: 8000, group: 'green' });
   }
 
   live() {
@@ -230,6 +256,7 @@ export class DriveSession {
       blinker: this.blinkerOn,
       siren: this.sirenActive,
       audioLevel: this.audio?.analyzer.level,
+      greenWave: this.greenWave?.current ?? null,
     };
   }
 

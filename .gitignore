@@ -13,3 +13,6 @@ __pycache__/
 ml/runs/
 ml/datasets/
 *.pt
+
+# Generated Macedonian voice clips (run `npm run voice`)
+public/voice/

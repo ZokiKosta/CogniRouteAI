@@ -146,7 +146,15 @@ async function main() {
     check(isolated, 'app page is cross-origin isolated (multi-threaded YOLO)');
 
     // --- drive ---
+    // Enable the Skopje green-wave demo corridor for this drive (its signals lie
+    // along the eastbound GPS path injected below).
+    await page.evaluate(() => {
+      const s = JSON.parse(localStorage.getItem('cogniroute.settings.v1') ?? '{}');
+      s.greenWaveDemo = true;
+      localStorage.setItem('cogniroute.settings.v1', JSON.stringify(s));
+    });
     await page.goto(`${BASE}/app/#/drive`);
+    await page.reload(); // settings are cached in memory; reload picks up greenWaveDemo
     await page.click('button.start');
     await page.waitForSelector('.drive', { timeout: 20000 });
     check(true, 'drive HUD is shown');
@@ -160,10 +168,11 @@ async function main() {
 
     // Watch the HUD continuously: blinker and siren indicators are transient.
     await page.evaluate(() => {
-      window.__seen = { blinker: false, siren: false, pills: new Set() };
+      window.__seen = { blinker: false, siren: false, greenWave: false, pills: new Set() };
       setInterval(() => {
         if (document.querySelector('.chip.blinker.on')) window.__seen.blinker = true;
         if (document.querySelector('.siren-banner.show')) window.__seen.siren = true;
+        if (document.querySelector('.green-wave.show')) window.__seen.greenWave = true;
         const pill = document.querySelector('.pill.show')?.textContent;
         if (pill) window.__seen.pills.add(pill);
       }, 150);
@@ -174,6 +183,9 @@ async function main() {
     check(roadRunning, 'YOLOv8 + lane detection running on the road camera');
     const speedShown = await waitFor(() => page.evaluate(() => Number(document.querySelector('.speed')?.textContent) > 30), 15000);
     check(speedShown, 'GPS speed shown in the HUD');
+
+    const greenWave = await waitFor(() => seen('greenWave'), 20000);
+    check(greenWave, 'green-wave advisory shown while approaching a signal');
 
     // Harsh brake from the motion sensors: phone upright facing the driver, rear camera forward (-Z).
     await page.evaluate(async () => {

@@ -202,6 +202,7 @@ function renderSettings(root) {
       field('Ограничување кога не е познато (km/h)', number('defaultLimit', 20, 130, 10)),
       h('label', { class: 'toggle' }, toggle('osmLimits'), 'Ограничувања од OpenStreetMap'),
       h('label', { class: 'toggle' }, toggle('voice'), 'Гласовни совети'),
+      h('label', { class: 'toggle' }, toggle('greenWaveDemo'), 'Зелен бран (демо коридор во Скопје)'),
       field('Адреса на серверот', server, 'Празно = истиот сервер од кој е отворена апликацијата.'),
       h('div', { class: 'row' }, h('button', { onClick: () => go('/setup') }, 'Држач и камера'), h('button', { onClick: () => go('/calibrate') }, 'Калибрација')),
       h(

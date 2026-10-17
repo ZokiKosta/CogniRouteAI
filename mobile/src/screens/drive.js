@@ -3,6 +3,7 @@
 // the coach talks. Ending a drive needs a one-second press.
 import { DIRECTION_LABELS, EVENT_TYPES, MANEUVER_TYPES, eventLabel, makeEvent } from '../../../shared/events.js';
 import { GAZE_ZONES } from '../../../shared/gaze.js';
+import { PHRASES } from '../../../shared/voice-phrases.js';
 import { DriveSession } from '../session.js';
 import { openMicrophone } from '../sensors/audio.js';
 import { attach, openCameras, stopStream } from '../sensors/cameras.js';
@@ -21,6 +22,14 @@ const ALERT_TEXT = {
   distraction: () => '👀 Гледај на патот!',
   drowsy: () => '😴 Изгледаш поспано – направи пауза',
   break: () => '☕ Време е за кратка пауза',
+};
+
+const GREEN_TEXT = {
+  slow: (a) => `🟢 Намали на ${a.targetKmh} за зелен бран`,
+  speed: (a) => `🟢 Забрзај до ${a.targetKmh} за зелено`,
+  keep: (a) => `🟢 Задржи ~${a.targetKmh} – зелен бран`,
+  go: () => '🟢 Фаќаш зелено – рамномерно',
+  ease: () => '🔴 Тргни од гас – следниот е црвен',
 };
 
 /** Optional browser APIs (fullscreen, orientation lock, wake lock) are missing on some phones, e.g. iPhone Safari. */
@@ -89,6 +98,32 @@ export async function renderDrive(root, { go, demo }) {
     toast(err.message ?? String(err), 'warn', 6000);
   }
 
+  // Green-wave signals: the user's own set, plus the Skopje demo corridor in
+  // demo mode. For the demo we re-anchor the cycles to now so a car leaving at
+  // ~50 km/h actually catches the wave.
+  async function loadSignals() {
+    if (settings.signals?.length && !demo) return settings.signals;
+    if (!demo && !settings.greenWaveDemo) return settings.signals ?? [];
+    try {
+      const data = await (await fetch('/signals/skopje-demo.json')).json();
+      if (!demo) return data.signals;
+      const gpsStart = { lat: 41.9965, lon: 21.4314 };
+      const mPerDeg = 111320 * Math.cos((gpsStart.lat * Math.PI) / 180);
+      const now = Date.now();
+      const v = (data.waveKmh ?? 50) / 3.6;
+      return data.signals.map((s) => {
+        const d = (s.lon - gpsStart.lon) * mPerDeg;
+        const eta = d / v; // seconds for the demo car to reach this light
+        const len = ((s.cycle.green[1] - s.cycle.green[0] + s.cycle.period) % s.cycle.period) || 30;
+        // green opens 3 s before the car arrives
+        const start = ((eta - 3) % s.cycle.period + s.cycle.period) % s.cycle.period;
+        return { ...s, cycle: { ...s.cycle, t0: now, green: [Math.round(start), Math.round((start + len) % s.cycle.period)] } };
+      });
+    } catch {
+      return [];
+    }
+  }
+
   // ---- HUD --------------------------------------------------------------
   const roadVideo = h('video', { class: 'road-video', muted: true, playsinline: true });
   const overlay = h('canvas', { class: 'road-overlay' });
@@ -110,6 +145,7 @@ export async function renderDrive(root, { go, demo }) {
     reverse: h('span', { class: 'chip reverse' }, 'РИКВЕРЦ'),
   };
   const gazeLabel = h('div', { class: 'gaze-label' }, '');
+  const greenWave = h('div', { class: 'green-wave' });
   const stopBtn = h('button', { class: 'stop' }, h('span', { class: 'fill' }), h('span', { class: 'label' }, 'Заврши (држи)'));
   const demoSlider = demo ? h('input', { type: 'range', class: 'demo-speed', min: 0, max: 130, step: 5, value: demoSpeed, onInput: (e) => (demoSpeed = Number(e.target.value)) }) : null;
 
@@ -122,7 +158,7 @@ export async function renderDrive(root, { go, demo }) {
       'div',
       { class: 'hud' },
       h('div', { class: 'hud-top' }, banner, sirenBanner),
-      h('div', { class: 'hud-left' }, speedEl, h('div', { class: 'unit' }, 'km/h'), limitEl, demoSlider),
+      h('div', { class: 'hud-left' }, speedEl, h('div', { class: 'unit' }, 'km/h'), limitEl, greenWave, demoSlider),
       h('div', { class: 'hud-right' }, scoreEl, eventsEl, h('div', { class: 'chips' }, Object.values(chips))),
       h('div', { class: 'hud-bottom' }, pill, stopBtn),
       h('div', { class: 'pip' }, driverVideo, gazeLabel),
@@ -214,6 +250,10 @@ export async function renderDrive(root, { go, demo }) {
           if (st.type === 'driver_error') showBanner(`Камерата кон возачот: ${st.message}`, 'info');
           if (st.type === 'mount_moved') showBanner('Телефонот се помести во држачот – повторна калибрација…', 'info');
         },
+        onGreenWave: (a) => {
+          const text = GREEN_TEXT[a.action]?.(a);
+          if (text) showPill(text, a.action === 'ease' || a.action === 'slow' ? 'green' : 'good');
+        },
       },
     });
     await session.start({
@@ -222,8 +262,10 @@ export async function renderDrive(root, { go, demo }) {
       driverVideo: streams.driver ? driverVideo : null,
       micStream: streams.mic,
       demo: demo ? { speedKmh: () => demoSpeed } : null,
+      signals: await loadSignals(),
     });
-    voice.say(demo ? 'Демото започна.' : 'Среќен пат. Возиме заедно.', { key: 'start', cooldownMs: 0 });
+    const hello = demo ? 'start_demo' : 'start';
+    voice.say(PHRASES[hello], { key: hello, cooldownMs: 0 });
 
     wakeLock = await attempt(() => navigator.wakeLock?.request('screen'));
     liveTimer = setInterval(updateHud, 250);
@@ -264,6 +306,33 @@ export async function renderDrive(root, { go, demo }) {
     chips.blinker.classList.toggle('on', !!L.blinker);
     chips.reverse.classList.toggle('on', L.motion?.motion === 'reverse');
     sirenBanner.classList.toggle('show', !!L.siren);
+    renderGreenWave(L.greenWave);
+  }
+
+  // Compact green-wave widget under the speed: light dot + countdown, advised
+  // speed, and how many signals lie ahead.
+  function renderGreenWave(a) {
+    if (!a) {
+      greenWave.className = 'green-wave';
+      greenWave.replaceChildren();
+      return;
+    }
+    const red = a.nowState === 'red';
+    greenWave.className = `green-wave show ${red ? 'red' : 'green'}`;
+    const label =
+      a.action === 'slow' || a.action === 'keep'
+        ? `${a.targetKmh}`
+        : a.action === 'speed'
+          ? `${a.targetKmh}↑`
+          : a.action === 'ease'
+            ? '—'
+            : `${a.targetKmh}`;
+    greenWave.replaceChildren(
+      h('span', { class: 'gw-dot' }),
+      h('span', { class: 'gw-count' }, `${a.secondsToChange}s`),
+      h('span', { class: 'gw-speed' }, a.action === 'ease' ? 'пушти гас' : `${label} km/h`),
+      a.countAhead > 1 ? h('span', { class: 'gw-ahead' }, `${a.countAhead} семафори`) : null,
+    );
   }
 
   // Touching the screen while moving = using the phone (except the stop button).
@@ -300,7 +369,7 @@ export async function renderDrive(root, { go, demo }) {
     finished = true;
     const trip = teardown();
     await saveTrip(trip);
-    voice.say(`Крај. Оценка ${trip.score.overall ?? ''}.`, { key: 'end', cooldownMs: 0 });
+    voice.say(PHRASES.end, { key: 'end', cooldownMs: 0 });
     uploadTrip(trip).catch(() => toast('Возењето е зачувано на телефонот и ќе се испрати подоцна.'));
     go(`/summary/${trip.id}`);
   }

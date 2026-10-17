@@ -787,6 +787,10 @@ body.driving {
   border-left: 4px solid var(--info);
 }
 
+.pill.green {
+  border-left: 4px solid var(--good);
+}
+
 .stop {
   position: relative;
   overflow: hidden;
@@ -1039,4 +1043,57 @@ body.driving {
   .bar-row {
     grid-template-columns: 1fr 1fr 64px;
   }
+}
+
+/* ---------- green wave (GLOSA) ---------- */
+.green-wave {
+  display: none;
+  align-items: center;
+  gap: 8px;
+  margin-top: 8px;
+  padding: 6px 10px;
+  border-radius: 12px;
+  background: rgba(5, 16, 28, 0.55);
+  font-size: 0.95rem;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.green-wave.show {
+  display: flex;
+}
+
+.green-wave .gw-dot {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  flex: none;
+}
+
+.green-wave.green .gw-dot {
+  background: var(--good);
+  box-shadow: 0 0 10px var(--good);
+}
+
+.green-wave.red .gw-dot {
+  background: var(--bad);
+  box-shadow: 0 0 10px var(--bad);
+}
+
+.green-wave .gw-count {
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+  min-width: 2.4em;
+  text-align: center;
+}
+
+.green-wave .gw-speed {
+  font-weight: 700;
+}
+
+.green-wave .gw-ahead {
+  width: 100%;
+  text-align: center;
+  color: var(--muted);
+  font-size: 0.8rem;
 }

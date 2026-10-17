@@ -18,6 +18,8 @@ export const DEFAULT_SETTINGS = {
   gazeCalibration: null,
   blinkerTemplate: null,
   mountDone: false,
+  greenWaveDemo: false, // use the Skopje demo signal corridor in a normal drive
+  signals: [], // user-provided fixed-time signals for the green wave
 };
 
 let cache = null;
