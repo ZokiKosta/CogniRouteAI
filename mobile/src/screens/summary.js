@@ -118,8 +118,8 @@ export async function renderSummary(root, { go, id }) {
             'section',
             { class: 'card' },
             h('h2', {}, `Маневри (${trip.maneuvers.length})`),
-            h('table', { class: 'maneuvers' }, h('thead', {}, h('tr', {}, h('th', {}, 'Маневар'), h('th', {}, 'Мигавец'), h('th', {}, 'Ретровизори'), h('th', {}, 'Линија'))), h('tbody', {}, maneuverRows)),
-            h('p', { class: 'muted small' }, 'Правилен редослед: ретровизор → мигавец → мртов агол → маневар.'),
+            h('table', { class: 'maneuvers' }, h('thead', {}, h('tr', {}, h('th', {}, 'Маневар'), h('th', {}, 'Жмигавец'), h('th', {}, 'Ретровизори'), h('th', {}, 'Линија'))), h('tbody', {}, maneuverRows)),
+            h('p', { class: 'muted small' }, 'Правилен редослед: ретровизор → жмигавец → мртов агол → маневар.'),
           )
         : null,
       h('section', { class: 'card' }, h('h2', {}, `Настани (${trip.events.length})`), eventRows.length ? eventRows : h('p', { class: 'muted' }, 'Нема настани – одлично!')),

@@ -1,5 +1,5 @@
 // Judges each maneuver the way a driving instructor would:
-//   ретровизор → мигавец → (мртов агол) → маневар
+//   ретровизор → жмигавец → (мртов агол) → маневар
 // Lane changes, turns and reversing come from the motion sensors and/or the
 // road camera; the turn signal from the microphone; mirror glances from the
 // driver camera. Missing inputs give "unknown" instead of a penalty.

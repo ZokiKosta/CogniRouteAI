@@ -72,8 +72,8 @@ export async function renderCalibrate(root, { go }) {
   });
 
   // --- turn signal ---------------------------------------------------------
-  const blinkerStatus = h('p', {}, s.blinkerTemplate ? `Мигавецот е снимен ✓ (${Math.round(60000 / s.blinkerTemplate.periodMs / (s.blinkerTemplate.periodMs < 450 ? 2 : 1))} трепкања во минута).` : 'Вклучи го мигавецот (може и сите четири), па притисни „Слушај“.');
-  const blinkerBtn = h('button', { class: 'primary' }, 'Слушај мигавец (8 s)');
+  const blinkerStatus = h('p', {}, s.blinkerTemplate ? `Жмигавецот е снимен ✓ (${Math.round(60000 / s.blinkerTemplate.periodMs / (s.blinkerTemplate.periodMs < 450 ? 2 : 1))} трепкања во минута).` : 'Вклучи го жмигавецот (може и сите четири), па притисни „Слушај“.');
+  const blinkerBtn = h('button', { class: 'primary' }, 'Слушај жмигавец (8 s)');
   blinkerBtn.addEventListener('click', async () => {
     blinkerBtn.disabled = true;
     let mic = null;
@@ -97,7 +97,7 @@ export async function renderCalibrate(root, { go }) {
         await sleep(1000);
       }
       const template = det.finishCalibration();
-      if (!template) throw new Error('Не го слушнав мигавецот. Намали ја музиката и стави го телефонот поблиску.');
+      if (!template) throw new Error('Не го слушнав жмигавецот. Намали ја музиката и стави го телефонот поблиску.');
       saveSettings({ blinkerTemplate: template });
       blinkerStatus.textContent = `Снимено ✓ – ритам на кликање ${template.periodMs} ms.`;
     } catch (err) {
@@ -129,8 +129,8 @@ export async function renderCalibrate(root, { go }) {
       h(
         'section',
         { class: 'card' },
-        h('h2', {}, '🎧 Звук на мигавецот'),
-        h('p', { class: 'muted' }, 'Секој автомобил клика различно. Кога апликацијата го знае звукот на твојот мигавец, полесно го разликува од музика.'),
+        h('h2', {}, '🎧 Звук на жмигавецот'),
+        h('p', { class: 'muted' }, 'Секој автомобил клика различно. Кога апликацијата го знае звукот на твојот жмигавец, полесно го разликува од музика.'),
         blinkerStatus,
         blinkerBtn,
       ),

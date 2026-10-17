@@ -65,7 +65,7 @@ function renderOverview() {
       tile('Возења', String(stats.trips)),
       tile('Километри', stats.km.toLocaleString('mk-MK')),
       tile('Часови возење', stats.hours.toLocaleString('mk-MK')),
-      tile('Мигавец пред маневар', stats.maneuvers.blinkerRate != null ? `${Math.round(stats.maneuvers.blinkerRate * 100)}%` : '—'),
+      tile('Жмигавец пред маневар', stats.maneuvers.blinkerRate != null ? `${Math.round(stats.maneuvers.blinkerRate * 100)}%` : '—'),
       tile('Целосна проверка на ретровизори', stats.maneuvers.mirrorRate != null ? `${Math.round(stats.maneuvers.mirrorRate * 100)}%` : '—'),
     );
   }
@@ -170,12 +170,12 @@ async function showTrip(id) {
     maneuverCard.append(
       table(
         [
-          ['Маневар', 'Мигавец', 'Ретровизори', 'Редослед'],
+          ['Маневар', 'Жмигавец', 'Ретровизори', 'Редослед'],
           ...trip.maneuvers.map((m) => [
             `${MANEUVER_TYPES[m.type]?.label ?? m.type}${m.dir && m.type !== 'reverse' ? ' ' + DIRECTION_LABELS[m.dir] : ''}${m.lineType === 'solid' ? ' (полна линија!)' : ''}`,
             m.type === 'reverse' ? '' : mark(m.blinker, { true: '✓', false: '✗' }),
             mark(m.mirrors, { full: '✓ сите', partial: '½ делумно', none: '✗ без' }),
-            mark(m.order, { mirror_first: 'ретровизор → мигавец ✓', blinker_first: 'мигавец пред ретровизор' }),
+            mark(m.order, { mirror_first: 'ретровизор → жмигавец ✓', blinker_first: 'жмигавец пред ретровизор' }),
           ]),
         ],
         [],

@@ -182,7 +182,7 @@ export async function renderDrive(root, { go, demo }) {
 
   const describeManeuver = (m) => {
     const parts = [`${MANEUVER_TYPES[m.type]?.label ?? m.type}${m.dir && m.type !== 'reverse' ? ' ' + DIRECTION_LABELS[m.dir] : ''}`];
-    if (m.blinker != null) parts.push(m.blinker ? 'мигавец ✓' : 'мигавец ✗');
+    if (m.blinker != null) parts.push(m.blinker ? 'жмигавец ✓' : 'жмигавец ✗');
     if (m.mirrors) parts.push({ full: 'ретровизори ✓', partial: 'ретровизор ½', none: 'ретровизор ✗' }[m.mirrors]);
     if (m.lineType === 'solid') parts.push('полна линија ✗');
     return parts.join(' · ');
@@ -220,7 +220,7 @@ export async function renderDrive(root, { go, demo }) {
     try {
       streams.mic = await openMicrophone();
     } catch {
-      note = note ?? 'Микрофонот не е дозволен – мигавец и сирени нема да се слушаат.';
+      note = note ?? 'Микрофонот не е дозволен – жмигавец и сирени нема да се слушаат.';
     }
 
     mount(root, hud);

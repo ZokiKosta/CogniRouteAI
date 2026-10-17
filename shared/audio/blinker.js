@@ -1,4 +1,4 @@
-// Turn-signal ("мигавец") detector: finds the short relay/electronic clicks in
+// Turn-signal ("жмигавец") detector: finds the short relay/electronic clicks in
 // the cabin sound and checks that they repeat on a steady rhythm (60-120
 // flashes per minute, "tick-tock" counted as two clicks).
 // Optional calibration records the car's own click sound and rhythm, which
