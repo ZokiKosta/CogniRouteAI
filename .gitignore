@@ -1,0 +1,15 @@
+node_modules/
+dist/
+public/vendor/
+server/data/
+test-results/
+*.log
+.env
+.DS_Store
+
+# Python / YOLO training
+__pycache__/
+.venv/
+ml/runs/
+ml/datasets/
+*.pt
