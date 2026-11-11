@@ -1,5 +1,8 @@
 # CogniRouteAI
 
+HACKATHON: FIX MY CITY BASE 43 
+AI PROTOTIP
+
 *AI driving coach: a phone app (PWA) that watches the road and the driver, listens for turn signals and sirens, reads the motion sensors while you drive, and gives spoken and written feedback, plus a web dashboard. Documentation below is in Macedonian.*
 
 AI инструктор за возење на твојот телефон. Телефонот стои во држач на шофершајбната и додека возиш:
